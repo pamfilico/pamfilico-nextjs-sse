@@ -8,7 +8,7 @@ on:
 
 jobs:
   integration:
-    name: SSE Flow Tests
+    name: SSE Flow Tests (HTTP + Redis)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +19,18 @@ jobs:
 
       - name: Start test stack
         run: docker compose -f docker-compose.test.yml up -d --build
+
+      - name: Wait for Redis
+        run: |
+          for i in $(seq 1 30); do
+            if docker compose -f docker-compose.test.yml exec -T redis redis-cli ping | grep -q PONG; then
+              echo "Redis ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Redis failed."
+          exit 1
 
       - name: Wait for Next.js
         run: |
@@ -37,9 +49,13 @@ jobs:
         working-directory: tests
         run: npm install
 
-      - name: Run SSE flow tests
+      - name: Run SSE flow tests (HTTP)
         working-directory: tests
         run: node test-sse-flow.mjs http://localhost:3099
+
+      - name: Run SSE Redis flow tests
+        working-directory: tests
+        run: node test-sse-redis-flow.mjs http://localhost:3099 redis://localhost:6399
 
       - name: Cleanup
         if: always()

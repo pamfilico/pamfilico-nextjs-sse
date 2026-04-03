@@ -205,91 +205,92 @@ frontend/src/
 | `useSSEEvent(eventName)` | Hook | Subscribe to a named event, returns payload or null |
 | `EventListener` | Component | Standalone SSE listener with render-prop |
 | `sseEmitter` | EventEmitter | Singleton for API route communication |
+| `initRedisSubscriber()` | Function | Start Redis subscriber (no-op if no REDIS_URL) |
 | `useSSEContext()` | Hook | Access `{ subscribe, isConnected }` |
 
 ---
 
 ## How it works
 
+**Default (no Redis):**
+
 ```
-Python backend
-    ↓ requests.post(NEXTAUTH_URL + "/api/trigger", {eventName, payload})
-    ↓
-POST /api/trigger
-    ↓ sseEmitter.emit('broadcast', {eventName, payload})
-    ↓
-GET /api/events (SSE ReadableStream)
-    ↓ event: updated_favorite_123
-    ↓ data: {"payload": {"is_favorite": true}}
-    ↓
-Browser EventSource (managed by SSEProvider)
-    ↓ eventSource.addEventListener("updated_favorite_123", handler)
-    ↓
-useSSEEvent("updated_favorite_123") → sets state → component re-renders
+Python backend → POST /api/trigger → sseEmitter → /api/events → Browser
 ```
+
+**With Redis (`REDIS_URL` set):**
+
+```
+Python backend → Redis PUBLISH "{APP_NAME}:sse_events"
+    ↓
+Next.js initRedisSubscriber() → sseEmitter → /api/events → Browser
+```
+
+Both HTTP trigger and Redis work simultaneously — existing `/api/trigger` still works alongside Redis.
+
+---
+
+## Redis mode
+
+Install ioredis:
+
+```bash
+npm install ioredis
+```
+
+Call `initRedisSubscriber()` once in your `/api/events` route:
+
+```typescript
+// app/api/events/route.ts
+import { sseEmitter } from '@/lib/eventEmitter'
+import { initRedisSubscriber } from '@pamfilico/nextjs-sse'
+
+initRedisSubscriber()
+
+export const dynamic = 'force-dynamic'
+// ... rest of route
+```
+
+Set environment variables:
+
+```bash
+REDIS_URL=redis://localhost:6379
+APP_NAME=docufast        # channel prefix (default: "app")
+```
+
+Add to `next.config.ts`:
+
+```typescript
+const nextConfig = {
+  serverExternalPackages: ['ioredis'],
+}
+```
+
+That's it. The subscriber feeds Redis messages into the same `sseEmitter` — no other changes needed.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `REDIS_URL` | (unset) | If set, subscribes to Redis for events |
+| `APP_NAME` | `app` | Redis channel prefix |
+| `SSE_CHANNEL` | `sse_events` | Redis channel suffix |
 
 ---
 
 ## Testing
 
 ```bash
-./run-tests.sh     # Docker: builds Next.js app, runs SSE flow tests
+./run-tests.sh     # Docker: builds Next.js + Redis, runs all tests
 ```
 
 Tests verify:
-- POST /api/trigger returns success
-- POST /api/trigger rejects missing eventName
-- SSE stream connects and sends confirmation
-- Trigger event → receive on SSE stream (favorite toggle flow)
-- Trigger event → receive on SSE stream (table refresh flow)
-- Trigger event → receive on SSE stream (contract completion flow)
-- Multiple events on same stream
+- **HTTP flow (7 tests):** trigger → SSE stream (favorite, table refresh, contract, multiple events)
+- **Redis flow (4 tests):** Redis publish → SSE stream, HTTP still works alongside, multiple publishes, complex payloads
 
 ---
 
 ## Backend counterpart
 
-Install [`pamfilico-python-sse`](../pamfilico-python-sse/) for the Flask side (`emit_event()` function).
-
----
-
-## Scaling
-
-The current design uses an **in-memory `EventEmitter`** to bridge `/api/trigger` and `/api/events`. This works perfectly with a single Next.js instance.
-
-### When it breaks
-
-With 2+ Next.js instances behind a load balancer, a user's SSE connection may be on instance 1 while the backend POSTs the event to instance 2. The in-memory emitter only broadcasts within its own process, so the user never receives the event.
-
-### Fix: Redis Pub/Sub between instances
-
-Replace the in-memory `EventEmitter` with Redis pub/sub:
-
-```
-Flask → POST /api/trigger (any instance)
-    ↓
-Redis PUBLISH "{app_name}:sse_events" channel
-    ↓
-All Next.js instances SUBSCRIBE to "{app_name}:sse_events"
-    ↓
-Each instance broadcasts to its own connected SSE clients
-```
-
-The channel name must include the app name (e.g., `docufast:sse_events`) so multiple apps sharing the same Redis don't cross-contaminate events.
-
-### When do you need this?
-
-| Setup | Current design works? |
-|-------|----------------------|
-| 1 Next.js process | Yes |
-| 2+ instances + sticky sessions | Yes, but fragile |
-| 2+ instances + round-robin LB | No — need Redis |
-
-### TODO
-
-- [ ] Add Redis pub/sub adapter as an option (`REDIS_URL` env var)
-- [ ] Support configurable transport (in-memory for dev, Redis for prod)
-- [ ] Add health endpoint for SSE connection count monitoring
+Install [`pamfilico-python-sse`](../pamfilico-python-sse/) for the Flask side (`emit_event()` — supports both HTTP and Redis modes).
 
 ---
 

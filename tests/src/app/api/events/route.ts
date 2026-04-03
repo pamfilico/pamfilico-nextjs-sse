@@ -1,4 +1,8 @@
 import { sseEmitter } from '@/lib/eventEmitter'
+import { initRedisSubscriber } from '@/lib/redisSubscriber'
+
+// Initialize Redis subscriber if REDIS_URL is set
+initRedisSubscriber()
 
 export const dynamic = 'force-dynamic'
 

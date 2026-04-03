@@ -23,13 +23,18 @@
     "test": "cd tests && npm run test"
   },
   "peerDependencies": {
-    "react": ">=19"
+    "react": ">=19",
+    "ioredis": ">=5.0.0"
+  },
+  "peerDependenciesMeta": {
+    "ioredis": { "optional": true }
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "react": "^19.0.0",
     "@types/react": "^19.0.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "ioredis": "^5.0.0"
   },
   "author": "Pamfilico",
   "license": "MIT",

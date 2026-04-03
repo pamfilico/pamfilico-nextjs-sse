@@ -1,7 +1,23 @@
 services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6399:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   nextjs:
     build:
       context: ./tests
       dockerfile: Dockerfile
     ports:
       - "3099:3099"
+    environment:
+      - REDIS_URL=redis://redis:6379
+      - APP_NAME=app
+    depends_on:
+      redis:
+        condition: service_healthy
