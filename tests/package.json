@@ -1,0 +1,22 @@
+{
+  "name": "nextjs-sse-test-app",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3099",
+    "build": "next build",
+    "start": "next start -p 3099",
+    "test": "node test-sse-flow.mjs"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.0.0",
+    "react-dom": "^18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/react": "^18.0.0",
+    "@types/node": "^20.0.0",
+    "eventsource": "^2.0.0"
+  }
+}

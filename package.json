@@ -1,0 +1,40 @@
+{
+  "name": "@pamfilico/nextjs-sse",
+  "version": "0.1.0",
+  "description": "SSE infrastructure for Next.js: provider, hook, API routes, and EventListener component",
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "npm run build",
+    "test": "cd tests && npm run test"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "react": "^18.0.0",
+    "@types/react": "^18.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "author": "Pamfilico",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pamfilico/pamfilico-nextjs-sse.git"
+  }
+}

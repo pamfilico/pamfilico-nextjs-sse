@@ -1,0 +1,7 @@
+services:
+  nextjs:
+    build:
+      context: ./tests
+      dockerfile: Dockerfile
+    ports:
+      - "3099:3099"
