@@ -253,6 +253,44 @@ Install [`pamfilico-python-sse`](../pamfilico-python-sse/) for the Flask side (`
 
 ---
 
+## Scaling
+
+The current design uses an **in-memory `EventEmitter`** to bridge `/api/trigger` and `/api/events`. This works perfectly with a single Next.js instance.
+
+### When it breaks
+
+With 2+ Next.js instances behind a load balancer, a user's SSE connection may be on instance 1 while the backend POSTs the event to instance 2. The in-memory emitter only broadcasts within its own process, so the user never receives the event.
+
+### Fix: Redis Pub/Sub between instances
+
+Replace the in-memory `EventEmitter` with Redis pub/sub:
+
+```
+Flask → POST /api/trigger (any instance)
+    ↓
+Redis PUBLISH "sse_events" channel
+    ↓
+All Next.js instances SUBSCRIBE to "sse_events"
+    ↓
+Each instance broadcasts to its own connected SSE clients
+```
+
+### When do you need this?
+
+| Setup | Current design works? |
+|-------|----------------------|
+| 1 Next.js process | Yes |
+| 2+ instances + sticky sessions | Yes, but fragile |
+| 2+ instances + round-robin LB | No — need Redis |
+
+### TODO
+
+- [ ] Add Redis pub/sub adapter as an option (`REDIS_URL` env var)
+- [ ] Support configurable transport (in-memory for dev, Redis for prod)
+- [ ] Add health endpoint for SSE connection count monitoring
+
+---
+
 ## License
 
 MIT
