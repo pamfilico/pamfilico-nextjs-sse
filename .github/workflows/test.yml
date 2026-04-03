@@ -1,0 +1,46 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  integration:
+    name: SSE Flow Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Start test stack
+        run: docker compose -f docker-compose.test.yml up -d --build
+
+      - name: Wait for Next.js
+        run: |
+          for i in $(seq 1 60); do
+            if curl -s -o /dev/null -w "%{http_code}" http://localhost:3099 | grep -q 200; then
+              echo "Next.js ready."
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Next.js failed to start."
+          docker compose -f docker-compose.test.yml logs
+          exit 1
+
+      - name: Install test dependencies
+        working-directory: tests
+        run: npm install
+
+      - name: Run SSE flow tests
+        working-directory: tests
+        run: node test-sse-flow.mjs http://localhost:3099
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.test.yml down
