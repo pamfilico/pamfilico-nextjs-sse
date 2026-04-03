@@ -2,7 +2,7 @@
 
 SSE infrastructure for Next.js frontends. Provides the `SSEProvider`, `useSSEEvent` hook, `EventListener` component, and the two API routes (`/api/trigger` + `/api/events`) that receive events from a Python backend and stream them to all connected browser tabs.
 
-**Used by:** [docufa.st](https://docufa.st)
+**Used by:** Coming soon
 
 ## Installation
 
