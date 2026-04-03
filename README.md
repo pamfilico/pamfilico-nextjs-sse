@@ -7,7 +7,7 @@ SSE infrastructure for Next.js frontends. Provides the `SSEProvider`, `useSSEEve
 ## Installation
 
 ```bash
-npm install @pamfilico/nextjs-sse
+npm install git+https://github.com/pamfilico/pamfilico-nextjs-sse.git
 ```
 
 ---
