@@ -268,12 +268,14 @@ Replace the in-memory `EventEmitter` with Redis pub/sub:
 ```
 Flask → POST /api/trigger (any instance)
     ↓
-Redis PUBLISH "sse_events" channel
+Redis PUBLISH "{app_name}:sse_events" channel
     ↓
-All Next.js instances SUBSCRIBE to "sse_events"
+All Next.js instances SUBSCRIBE to "{app_name}:sse_events"
     ↓
 Each instance broadcasts to its own connected SSE clients
 ```
+
+The channel name must include the app name (e.g., `docufast:sse_events`) so multiple apps sharing the same Redis don't cross-contaminate events.
 
 ### When do you need this?
 
