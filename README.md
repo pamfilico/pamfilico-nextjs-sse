@@ -10,6 +10,42 @@ SSE infrastructure for Next.js frontends. Provides the `SSEProvider`, `useSSEEve
 npm install git+https://github.com/pamfilico/pamfilico-nextjs-sse.git
 ```
 
+### POST + JSON SSE (long request / Crawlfast-style sync)
+
+When the backend returns `Content-Type: text/event-stream` and each event is one `data: {json}\n\n` line (same framing as `pamfilico_python_sse.json_stream.encode_sse_json_data_line`), use **`forEachSseJsonDataEvent`** to parse the body and **`useSseJsonPostTask`** for a typical `POST` + stepped progress + `done` / `error` flow. Pass an **`AbortSignal`** to cancel; handle **`onAbort`** for user cancellation.
+
+Payload shape is app-defined; the hook only interprets top-level **`event`**: `progress` | `done` | `error`. Map server fields (e.g. `step_index` / `step_total`) in **`mapProgress`**. UI labels such as “Batch” stay in your app (e.g. `progressLabel` on a progress bar).
+
+```tsx
+"use client";
+
+import { useSseJsonPostTask } from "@pamfilico/nextjs-sse";
+
+export function SyncButton({ token }: { token: string }) {
+  const { progress, isRunning, run } = useSseJsonPostTask();
+
+  const start = () =>
+    run({
+      url: "/api/v1/your-endpoint?stream=1",
+      init: {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({}),
+      },
+      initialProgress: { current: 0, total: 1 },
+      mapProgress: (d) => ({
+        current: Number(d.step_index ?? 0),
+        total: Math.max(1, Number(d.step_total ?? 1)),
+      }),
+      onDone: () => {},
+      onStreamError: console.error,
+      signal: undefined,
+ });
+
+  return null;
+}
+```
+
 ---
 
 ## Quick Start

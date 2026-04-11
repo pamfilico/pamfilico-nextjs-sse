@@ -20,7 +20,8 @@
   "scripts": {
     "build": "tsc",
     "prepare": "npm run build",
-    "test": "cd tests && npm run test"
+    "test:unit": "vitest run",
+    "test": "npm run test:unit && cd tests && npm run test"
   },
   "peerDependencies": {
     "react": ">=19",
@@ -30,11 +31,14 @@
     "ioredis": { "optional": true }
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "react": "^19.0.0",
-    "@types/react": "^19.0.0",
+    "@testing-library/react": "^16.3.0",
     "@types/node": "^22.0.0",
-    "ioredis": "^5.0.0"
+    "@types/react": "^19.0.0",
+    "ioredis": "^5.0.0",
+    "jsdom": "^26.0.0",
+    "react": "^19.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^3.2.0"
   },
   "author": "Pamfilico",
   "license": "MIT",
